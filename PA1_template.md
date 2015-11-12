@@ -44,7 +44,7 @@ medianstepsperday<-prettyNum(median(stepsperday$totalsteps),big.mark=",")
 
 I plotted the histogram with 10 breaks to provide a little more granularity to the plot than is provided by the default breaks. I also tried using 20 breaks, but that started to look messy with more bins containing zero or one day.
 
-In this dataset, the mean number of steps per day is 9,354.23 and the median is 10,395.
+In this dataset, **the mean number of steps per day is 9,354.23 and the median is 10,395.**
 
 ## What is the average daily activity pattern?
 
@@ -69,7 +69,7 @@ abline(v=intervalmaxsteps,col="red",lty=2)
 
 ![plot of chunk steps_per_interval](figure/steps_per_interval-1.png) 
 
-The maximum number of mean steps per five-minute interval (206.1698 steps) was found in interval 0835 (*i.e.* 08:35 am). The interval contining the maximum number of mean steps is indicated by the dashed red line in the time series plot.
+The maximum number of mean steps per five-minute interval (206.1698 steps) **was found in interval 0835 (*i.e.* 08:35 am)**. The interval contining the maximum number of mean steps is indicated by the dashed red line in the time series plot.
 
 ## Imputing missing values
 
