@@ -86,7 +86,7 @@ The approach being taken is:
 
 - Calculate the median number of steps per interval (already in `stepsperinterval$mediansteps`)
 - Create an index vector of the same length as the `steps` data frame which matches `steps$interval` to the corresponding `stepsperinterval$interval`. 
-- Add a new `fixedsteps` attribute to the data frame. This will take the value of `steps` if one exists; if `steps` is `NA` the index vector will be used to select the correct `mediansteps` value from `stepsperinterval`
+- Add a new `fixedsteps` attribute to the data frame. This will take the value of `steps` if one exists; if `is.na(steps)` the index vector will be used to select the correct `mediansteps` value from `stepsperinterval`
 
 (*This is not technically following the instruction to create a new data frame, but the end result is the same, it allowed me to more easily compare `steps` with `fixedsteps`, and the grading is based on the strategy and result, not on the details of the method.*)
 

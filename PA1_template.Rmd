@@ -23,7 +23,7 @@ stepdata$interval<-as.POSIXct(sprintf("%04d",stepdata$interval),format="%H%M")
 
 Using the dplyr package and command chaining to group the data by date and to summarize the steps per date using the sum function (with `na.rm=T` to remove the NA values). 
 
-```{r total_steps_per_day,message=F}
+```{r total_steps_per_day,message=F,fig.width=4}
 library(dplyr)
 steps<-tbl_df(stepdata)
 stepsperday<-steps %>% group_by(date) %>% summarize(totalsteps=sum(steps,na.rm=T))
@@ -45,7 +45,7 @@ Again using dplyr, but this time summarizing per interval (*i.e.* across days) a
 
 The mean number of steps per interval is plotted below as a time series plot.
 
-```{r steps_per_interval}
+```{r steps_per_interval,fig.width=4}
 # Chain dplyr commands to calculate mean steps per interval. Also calculate median steps per interval
 # as I'll use this later in the analysis.
 stepsperinterval<-steps %>% group_by(interval) %>% 
@@ -75,11 +75,11 @@ The approach being taken is:
 
 - Calculate the median number of steps per interval (already in `stepsperinterval$mediansteps`)
 - Create an index vector of the same length as the `steps` data frame which matches `steps$interval` to the corresponding `stepsperinterval$interval`. 
-- Add a new `fixedsteps` attribute to the data frame. This will take the value of `steps` if one exists; if `steps` is `NA` the index vector will be used to select the correct `mediansteps` value from `stepsperinterval`
+- Add a new `fixedsteps` attribute to the data frame. This will take the value of `steps` if one exists; if `is.na(steps)` the index vector will be used to select the correct `mediansteps` value from `stepsperinterval`
 
 (*This is not technically following the instruction to create a new data frame, but the end result is the same, it allowed me to more easily compare `steps` with `fixedsteps`, and the grading is based on the strategy and result, not on the details of the method.*)
 
-```{r calculate_median_per_interval,echo=T}
+```{r calculate_median_per_interval,echo=T,fig.width=4}
 # Create an index for the staps data frame, pointing to the corresponding row in stepsperinterval
 medianstepindex<-match(steps$interval,stepsperinterval$interval)
 
@@ -124,7 +124,7 @@ steps<-mutate(steps,daytype=as.factor(ifelse(weekdays(date) %in% c("Saturday","S
 
 Now recalculate the steps per interval (`stepsperinterval2`), grouping by `daytype` as well as `interval`. This is where my choice to convert the interval to `POSIXct` proved troublesome as modifying a `lattice` plot to display only the time (no date) took a bit of searching. It requires adding a `scales` argument to `xyplot`. To simplify the `xyplot` call a little, I created an `xtickinterval` vector that is then used to specify both the tick locations and the reformatted tick labels.
 
-```{r panelplot}
+```{r panelplot,fig.width=4}
 library(lattice)
 
 # Recalculate steps per interval, grouping by daytype as well as interval
