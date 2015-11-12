@@ -1,105 +1,98 @@
-# Reproducible Research: Peer Assessment 1
-Christopher Porter  
+---
+title: "Reproducible Research: Peer Assessment 1"
+author: "Christopher Porter"
+output: 
+  html_document:
+    keep_md: true
+---
 
 ## Loading and preprocessing the data
 
-For this section, the R code chunk below sets the working directory to my local project directory, loads the CSV file into a variable called stepdata, and converts the date field to a date (POSIXct) format. The interval refers to the time of day, so I'm also converting it to a datetime format; when displaying the value later in the document I will convert to a time only display format.
+The R code chunk below sets the working directory to my local project directory and loads the CSV file into a variable called `stepdata`. The `interval` variable is not continuous, but refers to the time (HHMM in 24h format, with leading zeros removed), so treating it as a `numeric` value will cause problems when plotting (missing values will be assumed). Thus, I'm converting both the date and the interval attributes to POSIXct (date/time) format. This will add a date (today) to the interval, so when displaying the value later in the analysis I will convert to a time only display format.
 
 
 ```r
 setwd("~/Documents/Learning/Coursera/Data Science/Reproducible_Research/RepData_PeerAssessment1")
 stepdata<-read.csv("activity.csv")
-# Convert date to POSIXct
+# Convert date and interval to POSIXct
 stepdata$date<-as.POSIXct(stepdata$date)
-# Convert interval to POSIXct - date part will be today
+# To convert interval use sprintf to pad the interval to four digits with leading zeros
 stepdata$interval<-as.POSIXct(sprintf("%04d",stepdata$interval),format="%H%M")
-summary(stepdata)
-```
-
-```
-##      steps             date                    
-##  Min.   :  0.00   Min.   :2012-10-01 00:00:00  
-##  1st Qu.:  0.00   1st Qu.:2012-10-16 00:00:00  
-##  Median :  0.00   Median :2012-10-31 00:00:00  
-##  Mean   : 37.38   Mean   :2012-10-31 00:25:34  
-##  3rd Qu.: 12.00   3rd Qu.:2012-11-15 00:00:00  
-##  Max.   :806.00   Max.   :2012-11-30 00:00:00  
-##  NA's   :2304                                  
-##     interval                  
-##  Min.   :2015-11-12 00:00:00  
-##  1st Qu.:2015-11-12 05:58:45  
-##  Median :2015-11-12 11:57:30  
-##  Mean   :2015-11-12 11:57:30  
-##  3rd Qu.:2015-11-12 17:56:15  
-##  Max.   :2015-11-12 23:55:00  
-## 
 ```
 
 ## What is mean total number of steps taken per day?
 
-Using the dplyr package and command chaining to group the data by date and to summarize using the sum function.
+Using the dplyr package and command chaining to group the data by date and to summarize the steps per date using the sum function (with `na.rm=T` to remove the NA values). 
 
 
 ```r
 library(dplyr)
 steps<-tbl_df(stepdata)
 stepsperday<-steps %>% group_by(date) %>% summarize(totalsteps=sum(steps,na.rm=T))
-hist(stepsperday$totalsteps,breaks=20,main="Total number of steps taken per day",
+# Plot histogram of steps per day
+hist(stepsperday$totalsteps,breaks=10,main="Total number of steps taken per day",
      xlab="Number of steps",ylab="Number of days")
 ```
 
-![](PA1_template_files/figure-html/total_steps_per_day-1.png) 
+![plot of chunk total_steps_per_day](figure/total_steps_per_day-1.png) 
 
 ```r
+# Calculate mean and median steps per day - nicely formatted with prettyNum
 meanstepsperday<-prettyNum(mean(stepsperday$totalsteps),big.mark=",")
 medianstepsperday<-prettyNum(median(stepsperday$totalsteps),big.mark=",")
 ```
+
+I plotted the histogram with 10 breaks to provide a little more granularity to the plot than is provided by the default breaks. I also tried using 20 breaks, but that started to look messy with more bins containing zero or one day.
 
 In this dataset, the mean number of steps per day is 9,354.23 and the median is 10,395.
 
 ## What is the average daily activity pattern?
 
-Again using dplyr, this time I summarize per interval (*i.e.* across days), and calculate the mean number of steps per interval. This is plotted as a time series plot.
+Again using dplyr, but this time summarizing per interval (*i.e.* across days) and calculating the mean number of steps per interval (again with `na.rm=T`). I also calculated the median number of steps per interval as this is the value I chose for imputing missing values later in the analysis. 
+
+The mean number of steps per interval is plotted below as a time series plot.
 
 
 ```r
 # Chain dplyr commands to calculate mean steps per interval. Also calculate median steps per interval
 # as I'll use this later in the analysis.
-stepsperinterval<-steps %>% group_by(interval) %>% summarize(meansteps=mean(steps,na.rm=T),
-                                                             mediansteps=median(steps,na.rm=T))
+stepsperinterval<-steps %>% group_by(interval) %>% 
+        summarize(meansteps=mean(steps,na.rm=T),mediansteps=median(steps,na.rm=T))
+# Find the maximum number of mean steps, and the interval in which that maximum is found
 maxmeansteps<-max(stepsperinterval$meansteps)
 intervalmaxsteps<-stepsperinterval[stepsperinterval$meansteps==maxmeansteps,]$interval
-# par(las=2)
-with(stepsperinterval,plot(interval,meansteps,type="l",main="Mean steps per 5 minute interal",
+# Plot time series. Add indication of where max is found (abline)
+with(stepsperinterval,plot(interval,meansteps,type="l",main="Mean steps per 5 minute interval",
                            xlab="Time of day (interval)",ylab="Mean steps"))
 abline(v=intervalmaxsteps,col="red",lty=2)
 ```
 
-![](PA1_template_files/figure-html/steps_per_interval-1.png) 
+![plot of chunk steps_per_interval](figure/steps_per_interval-1.png) 
 
-```r
-# Format the number for printing
-maxmeansteps<-prettyNum(maxmeansteps)
-```
-
-The maximum number of mean steps per 5-minute interval (206.1698 steps) was found in interval 0835 (*i.e.* 08:35am). The interval contining the maximum number of mean steps is indicated by the dashed red line in the above plot.
+The maximum number of mean steps per five-minute interval (206.1698 steps) was found in interval 0835 (*i.e.* 08:35 am). The interval contining the maximum number of mean steps is indicated by the dashed red line in the time series plot.
 
 ## Imputing missing values
 
 
 ```r
-rowswithNA<-sum(is.na(stepdata[,1]))
+rowswithNA<-sum(is.na(steps[,1]))
 ```
 
-There are 2304 rows containing NA values in the data set.
+There are 2,304 rows containing NA values in the data set.
 
-To fill in the missing values, I'm going to take the median number of steps for that interval across all days for which there are values (the median is less susceptible to outliers.)
+To fill in the missing values, I chose to take the median number of steps for the corresponding interval across all days for which there are values (the median is less susceptible to outliers). This was computed in the code chunk above, so doesn't need to be recalculated.
+
+The approach being taken is:
+
+- Calculate the median number of steps per interval (already in `stepsperinterval$mediansteps`)
+- Create an index vector of the same length as the `steps` data frame which matches `steps$interval` to the corresponding `stepsperinterval$interval`. 
+- Add a new `fixedsteps` attribute to the data frame. This will take the value of `steps` if one exists; if `steps` is `NA` the index vector will be used to select the correct `mediansteps` value from `stepsperinterval`
+
+(*This is not technically following the instruction to create a new data frame, but the end result is the same, it allowed me to more easily compare `steps` with `fixedsteps`, and the grading is based on the strategy and result, not on the details of the method.*)
 
 
 ```r
-# Now I'll use that median steps value I calculated in the code chunk above
-# First, create an index for the staps data frame, pointing to the corresponding row in stepsperinterval
-
+# Create an index for the staps data frame, pointing to the corresponding row in stepsperinterval
 medianstepindex<-match(steps$interval,stepsperinterval$interval)
 
 # Now mutate steps to add a 'fixedsteps' atribute. This is equal to steps, but if steps is NA, it uses the index
@@ -107,41 +100,65 @@ medianstepindex<-match(steps$interval,stepsperinterval$interval)
 
 steps<-mutate(steps,fixedsteps=ifelse(is.na(steps),stepsperinterval[medianstepindex,]$mediansteps,steps))
 
+# Re-calculate steps per day using fixedsteps
 fixedstepsperday<-steps %>% group_by(date) %>% summarize(totalsteps=sum(fixedsteps,na.rm=T))
-hist(fixedstepsperday$totalsteps,breaks=20,main="Total steps per day (missing values replaced with median)",
+
+# Plot as a histogram
+hist(fixedstepsperday$totalsteps,breaks=10,main="Total steps per day (missing values replaced with median)",
      xlab="Number of steps",ylab="Number of days")
 ```
 
-![](PA1_template_files/figure-html/calculate_median_per_interval-1.png) 
+![plot of chunk calculate_median_per_interval](figure/calculate_median_per_interval-1.png) 
 
 ```r
+# Calculate mean and median steps per day for imputed data, and the differences in mean and median
+# between original and imputed data.
 meanfixedstepsperday<-prettyNum(mean(fixedstepsperday$totalsteps),big.mark=",")
 medianfixedstepsperday<-prettyNum(median(fixedstepsperday$totalsteps),big.mark=",")
+meandiff<-mean(fixedstepsperday$totalsteps)-mean(stepsperday$totalsteps)
+mediandiff<-median(fixedstepsperday$totalsteps)-median(stepsperday$totalsteps)
 ```
 
-Imputing the missing (NA) values for the steps attributes results in the following changes to mean and median steps per day:
+Surprisingly (to me), replacing the `NA` values with the per-interval median has not changed the histogram. When plotted with 20 breaks (rather than 10 as shown here) eight days move from the 0-999 step bin to the 1000-1999 step bin. 
 
-- The mean number of steps per day is 9,503.869, vs. 9,354.23 steps previouly; a difference of 149.6393 steps. 
-- The median number of steps per day is 10,395, vs. 10,395 steps previouly; a difference of 0 steps. 
+This suggests that the median values for the number of steps per interval is typically low. Indeed for 235 of the 288 intervals, the median is zero.
 
+Imputing the missing (`NA`) values for the steps attributes results in the following changes to mean and median steps per day:
+
+- The mean number of steps per day is 9,503.869, vs. 9,354.23 steps without imputing values; a difference of 149.6393 steps. 
+- The median number of steps per day is 10,395, vs. 10,395 steps without imputing values; a difference of 0 steps. 
+
+In summary, using the median steps per interval to replace `NA` values results in only a small change in the mean number of steps per day, and makes no difference to the median steps per day.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-In order to compare weekdays with weekends, I'm using the weekdays() function to evaluate each date in the dataset and to add an attribute (daytype) to the dataset.
+In order to compare weekdays with weekends, I use the `weekdays()` function to evaluate each date in the dataset and to add an attribute `daytype` to the dataset.
 
 
 ```r
-steps<-mutate(steps,daytype=ifelse(weekdays(date) %in% c("Saturday","Sunday"),"weekend","weekday"))
+steps<-mutate(steps,daytype=as.factor(ifelse(weekdays(date) %in% c("Saturday","Sunday"),"weekend","weekday")))
 ```
+
+Now recalculate the steps per interval (`stepsperinterval2`), grouping by `daytype` as well as `interval`. This is where my choice to convert the interval to `POSIXct` proved troublesome as modifying a `lattice` plot to display only the time (no date) took a bit of searching. It requires adding a `scales` argument to `xyplot`. To simplify the `xyplot` call a little, I created an `xtickinterval` vector that is then used to specify both the tick locations and the reformatted tick labels.
 
 
 ```r
 library(lattice)
-stepsperinterval2<-steps %>% group_by(daytype,interval) %>% summarize(meansteps=mean(steps,na.rm=T))
+
+# Recalculate steps per interval, grouping by daytype as well as interval
+stepsperinterval2<-steps %>% group_by(daytype,interval) %>% summarize(meansteps=mean(fixedsteps,na.rm=T))
+
+# Choose the x-axis tick interval (4h steps from the first time point)
+xtickinterval<-seq(stepsperinterval2[1,]$interval,by="4 hour",length=7)
+
+# Plot time series for weekdays vs weekends as a panel plot. Use the tick interval to specify
+# location and labels for x-axis tickmarks. (Use y-axis defaults)
+
 xyplot(meansteps ~ interval | daytype,stepsperinterval2,type="l",layout=c(1,2),
        xlab="Time of day (interval)",ylab="Mean steps per interval",
-       scales=list(x=list(at=seq(stepsperinterval2[1,]$interval,by="6 hour",length=5),
-                          labels=format(seq(stepsperinterval2[1,]$interval,by="6 hour",length=5),"%H:%M"))))
+       scales=list(x=list(at=xtickinterval,labels=format(xtickinterval,"%H:%M"))))
 ```
 
-![](PA1_template_files/figure-html/panelplot-1.png) 
+![plot of chunk panelplot](figure/panelplot-1.png) 
+
+The panel plot shows the different patterns for weekday and weekend activity. Weekend activity starts a bit later in the day, with less of a pronounced peak around 8-9am, but with generally more activity in the afternoons.
