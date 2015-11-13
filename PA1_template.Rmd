@@ -63,6 +63,8 @@ The maximum number of mean steps per five-minute interval (`r prettyNum(maxmeans
 
 ## Imputing missing values
 
+*(Note to assessors: I ended up trying this with two different methods for comparison after my initial method made little change to the mean and median. Apologies for the extra reading...)*
+
 ``` {r missing_values,echo=T}
 rowswithNA<-sum(is.na(steps[,1]))
 ```
@@ -79,7 +81,7 @@ The approach being taken is:
 
 (*This is not technically following the instruction to create a new data frame, but the end result is the same, it allowed me to more easily compare `steps` with `fixedsteps`, and the grading is based on the strategy and result, not on the details of the method.*)
 
-```{r calculate_median_per_interval,echo=T,fig.width=8}
+```{r impute_missing_with_median,echo=T,fig.width=8}
 # Create an index for the staps data frame, pointing to the corresponding row in stepsperinterval
 medianstepindex<-match(steps$interval,stepsperinterval$interval)
 
@@ -103,7 +105,7 @@ meandiff<-mean(fixedstepsperday$totalsteps)-mean(stepsperday$totalsteps)
 mediandiff<-median(fixedstepsperday$totalsteps)-median(stepsperday$totalsteps)
 ```
 
-Surprisingly (to me), replacing the `NA` values with the per-interval median has not changed the histogram. When plotted with 20 breaks (rather than 10 as shown here) eight days move from the 0-999 step bin to the 1000-1999 step bin. 
+Surprisingly, replacing the `NA` values with the per-interval median has not changed the histogram. When plotted with 20 breaks (rather than 10 as shown here) eight days move from the 0-999 step bin to the 1000-1999 step bin. 
 
 This suggests that the median values for the number of steps per interval is typically low. Indeed for `r nrow(stepsperinterval[stepsperinterval$mediansteps==0,])` of the `r nrow(stepsperinterval)` intervals, the median is zero.
 
@@ -113,6 +115,36 @@ Imputing the missing (`NA`) values for the steps attributes results in the follo
 - The median number of steps per day is `r medianfixedstepsperday`, vs. `r medianstepsperday` steps without imputing values; a difference of `r prettyNum(mediandiff)` steps. 
 
 In summary, using the median steps per interval to replace `NA` values results in only a small change in the mean number of steps per day, and makes no difference to the median steps per day.
+
+### Repeat with mean per interval instead of median
+
+I'm now intrigued how different the result would be if the mean per interval were used instead of the median. The code, modified to make that change, is below along with the same summary results:
+
+```{r impute_missing_with_mean,echo=T,fig.width=8}
+# Now mutate steps to add a 'fixedsteps.mean' atribute, using the mean instead of median
+steps<-mutate(steps,fixedsteps.mean=ifelse(is.na(steps),stepsperinterval[medianstepindex,]$meansteps,steps))
+
+# Re-calculate steps per day using fixedsteps
+fixedstepsperday.mean<-steps %>% group_by(date) %>% summarize(totalsteps=sum(fixedsteps.mean,na.rm=T))
+
+# Plot as a histogram
+hist(fixedstepsperday.mean$totalsteps,breaks=10,main="Total steps per day (missing values replaced with mean)",
+     xlab="Number of steps",ylab="Number of days")
+
+# Calculate mean and median steps per day for imputed data, and the differences in mean and median
+# between original and imputed data.
+meanfixedstepsperday.mean<-prettyNum(mean(fixedstepsperday.mean$totalsteps),big.mark=",")
+medianfixedstepsperday.mean<-prettyNum(median(fixedstepsperday.mean$totalsteps),big.mark=",")
+meandiff.mean<-mean(fixedstepsperday.mean$totalsteps)-mean(stepsperday$totalsteps)
+mediandiff.mean<-median(fixedstepsperday.mean$totalsteps)-median(stepsperday$totalsteps)
+```
+
+Imputing the missing (`NA`) values for the steps attributes using the mean results in the following changes to mean and median steps per day:
+
+- The mean number of steps per day is `r meanfixedstepsperday.mean`, vs. `r meanstepsperday` steps without imputing values; a difference of `r prettyNum(meandiff.mean)` steps. 
+- The median number of steps per day is `r medianfixedstepsperday.mean`, vs. `r medianstepsperday` steps without imputing values; a difference of `r prettyNum(mediandiff.mean)` steps. 
+
+As suspected, using the mean per interval rather than the median per interval results in a much greater change in the histogram (the mean steps per day for the recomputed days move into the bins that already had a higher frequency), and a much greater change in the mean and median steps per day. This is perhaps a more realistic method for imputing the missing values.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
